@@ -1,4 +1,4 @@
-# LAMMPS input for running bonding simulation by CG model
+# LAMMPS input for CG curing simulations
 
 ### PREREQUISITE:
 LAMMPS software with USER-REACTION compliled
