@@ -1,4 +1,5 @@
 # LAMMPS input for CG curing simulations
+[![DOI](https://zenodo.org/badge/625440522.svg)](https://zenodo.org/badge/latestdoi/625440522)
 
 ### PREREQUISITE:
 LAMMPS software with USER-REACTION compliled
