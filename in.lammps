@@ -1,0 +1,104 @@
+# Initialization
+units           real
+atom_style      angle
+boundary	p p p
+
+# Forcefield parameters
+bond_style	harmonic
+angle_style	table linear 1001
+pair_style	table linear 1001
+
+read_data       bonding-3800v4000i1p1000.lammps extra/special/per/atom 50 extra/bond/per/atom 1 extra/angle/per/atom 2
+
+bond_coeff      8   108.662901314   3.89540911316
+bond_coeff      7   13.9123490727   4.86401800083
+bond_coeff      6   65.9133255086   3.79987756079
+bond_coeff      5   58.230909462   3.7827732279
+bond_coeff      4   84.4668836383   3.63350726728
+bond_coeff      2   1.12680817152   4.81242905926
+bond_coeff      3   1.53464805583   4.82234672032
+bond_coeff      1   83.2859985042   3.6363390649
+
+angle_coeff      8 potentials/angle.table.BBN.33 BBN
+angle_coeff      7 potentials/angle.table.BBU.33 BBU
+angle_coeff      6 potentials/angle.table.AUB.33 AUB
+angle_coeff      5 potentials/angle.table.CAU.33 CAU
+angle_coeff      4 potentials/angle.table.ACS.33 ACS
+angle_coeff      2 potentials/angle.table.CSS.33 CSS
+angle_coeff      3 potentials/angle.table.SSS.33 SSS
+angle_coeff      1 potentials/angle.table.MCS.33 MCS
+
+pair_coeff      1 1 potentials/pair.table.AA.33 AA
+pair_coeff      1 2 potentials/pair.table.AB.33 AB
+pair_coeff      1 3 potentials/pair.table.AC.33 AC
+pair_coeff      1 4 potentials/pair.table.AM.33 AM
+pair_coeff      1 5 potentials/pair.table.AN.33 AN
+pair_coeff      1 6 potentials/pair.table.AS.33 AS
+pair_coeff      1 7 potentials/pair.table.AU.33 AU
+pair_coeff      2 2 potentials/pair.table.BB.33 BB
+pair_coeff      2 3 potentials/pair.table.BC.33 BC
+pair_coeff      2 4 potentials/pair.table.BM.33 BM
+pair_coeff      2 5 potentials/pair.table.BN.33 BN
+pair_coeff      2 6 potentials/pair.table.BS.33 BS
+pair_coeff      2 7 potentials/pair.table.BU.33 BU
+pair_coeff      3 3 potentials/pair.table.CC.33 CC
+pair_coeff      3 4 potentials/pair.table.CM.33 CM
+pair_coeff      3 5 potentials/pair.table.CN.33 CN
+pair_coeff      3 6 potentials/pair.table.CS.33 CS
+pair_coeff      3 7 potentials/pair.table.CU.33 CU
+pair_coeff      4 4 potentials/pair.table.MM.33 MM
+pair_coeff      4 5 potentials/pair.table.MN.33 MN
+pair_coeff      4 6 potentials/pair.table.MS.33 MS
+pair_coeff      4 7 potentials/pair.table.MU.33 MU
+pair_coeff      5 5 potentials/pair.table.NN.33 NN
+pair_coeff      5 6 potentials/pair.table.NS.33 NS
+pair_coeff      5 7 potentials/pair.table.NU.33 NU
+pair_coeff      6 6 potentials/pair.table.SS.33 SS
+pair_coeff      6 7 potentials/pair.table.SU.33 SU
+pair_coeff      7 7 potentials/pair.table.UU.33 UU
+
+#######################################################################
+neigh_modify     delay 0 every 1 check yes
+special_bonds    lj/coul 0.0 1.0 1.0
+
+# Thermo output in lammps log
+thermo_style     custom step temp press etotal ke pe epair
+thermo           10
+timestep         10
+
+# Initial equilibrium
+velocity         all create 300.0 1234
+fix              1 all nve/limit 3.0
+fix              2 all temp/berendsen 300 300 15
+run              500
+unfix            1
+unfix            2
+
+fix              1 all nvt temp 300 300 100
+run              500
+unfix            1
+
+# Bonding template
+molecule         mol1 mol_mixture.txt
+molecule         mol2 mol_pu1000.txt
+
+# Bonding simulation by bond/react command
+reset_timestep   0
+fix              2 all bond/react stabilization yes nvt_grp .03 &
+                       react bonding all 100 0.0 5.5 mol1 mol2 map.txt prob 0.50 12345
+fix              1 all nvt temp 300 300 500
+fix              3 bond_react_MASTER_group temp/rescale 1 300 300 10 1
+thermo_style     custom step temp press density f_2[1]
+
+# Output dump trajectory and bond id/type
+dump             1 all custom 1000000 bonding-unwrap.lammpstrj id mol type xu yu zu
+dump_modify      1 sort id
+dump             2 all custom 10000 bonding-wrap.lammpstrj id mol type x y z
+dump_modify      2 sort id
+compute          3 all property/local btype batom1 batom2
+dump             3 all local 10000 local_bond.lammpstrj c_3[*]
+
+# run 200ns
+run              20000000
+write_data       post-bonding-200ns.lammps
+
